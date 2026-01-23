@@ -16,9 +16,11 @@ int iconNum = 1025;
 
 //// Target Icon Info
 Icon targetIcon;
-String targetName = "pikachu.jpg";
+String targetName = "";
 float targetX;
 float targetY;
+float targetIndex;
+float previousTargetIndexs[] = new float[iconNum];
 
 
 //// Page Info
@@ -96,7 +98,7 @@ void setup() {
   float iconH = screenHeight / rows;
 
 
-  float targetIndex = random(iconNum);
+  targetIndex = random(iconNum);
 
   for (int i = 0; i < iconNum; i++) {
     try {
@@ -109,10 +111,10 @@ void setup() {
       // Stop reading because of an error or file is empty
       break;
     }else {
-      // if (i == (int)targetIndex) {
-      //   println("Target Icon: " + name);
-      //   targetName = name;
-      // }
+      if (i == (int)targetIndex) {
+        println("Target Icon: " + name);
+        targetName = name;
+      }
       PImage tempImg = loadImage("icons/" + name);
       tempImg.resize((int)iconW, (int)iconH);
       TotalIcons.add(new Icon(tempImg, name, 0, 0)); // give temporary position for now
@@ -153,17 +155,23 @@ void draw() {
 
   if (!targetFound) {
     int currentTime = millis();
-    if (currentTime - lastPageTime > delayTime) {
-      if (rightPressed && currentPage < totalPages - 1) {
-        currentPage++;
-        lastPageTime = currentTime;
-        numPageChanges++;
-      } else if (leftPressed && currentPage > 0) {
-        currentPage--;
-        lastPageTime = currentTime;
-        numPageChanges++;
+    
+    if (rightPressed && currentPage < totalPages - 1) {
+        if (currentTime - lastPageTime > delayTime) { 
+          currentPage++;
+          lastPageTime = currentTime;
+          numPageChanges++;
+        }
+    } 
+    
+    if (leftPressed && currentPage > 0) {
+        if (currentTime - lastPageTime > delayTime) {
+          currentPage--;
+          lastPageTime = currentTime;
+          numPageChanges++;
+        }
       }
-    }
+    
 
     AllPages.get(currentPage).displayPage();
 
@@ -182,6 +190,8 @@ void draw() {
     text("Elapsed Time: " + (elapsedTime / 1000) + " seconds,", screenWidth / 2, screenHeight / 2);
     text("Number of Errors: " + numErrors + ",", screenWidth / 2, screenHeight / 2 + 40);
     text("Number of Page Changes: " + numPageChanges + ",", screenWidth / 2, screenHeight / 2 + 80);
+    textSize(18);
+    text("Click anywhere to start again.", screenWidth / 2, screenHeight / 2 + 140);
   }
 
 }
@@ -196,9 +206,23 @@ void keyReleased() {
 
 void keyPressed() {
   if (keyCode == RIGHT) {
-    rightPressed = true;
+    if (!rightPressed) { 
+      if (currentPage < totalPages - 1) {
+        currentPage++;
+        numPageChanges++;
+        lastPageTime = millis(); 
+      }
+      rightPressed = true;
+    }
   } else if (keyCode == LEFT) {
-    leftPressed = true;
+    if (!leftPressed) { 
+      if (currentPage > 0) {
+        currentPage--;
+        numPageChanges++;
+        lastPageTime = millis(); 
+      }
+      leftPressed = true;
+    }
   }
 }
 
@@ -220,5 +244,53 @@ void mousePressed() {
         numErrors++;
       }
     }
+  } else {
+    // Reset the game
+    currentPage = 0;
+    numErrors = 0;
+    numPageChanges = 0;
+    elapsedTime = 0;
+    lastPageTime = millis();
+
+    // store previous target indexes
+    previousTargetIndexs[(int)targetIndex] = targetIndex;
+
+    targetIndex = random(iconNum);
+    while (previousTargetIndexs[(int)targetIndex] == targetIndex) {
+      targetIndex = random(iconNum);
+    }
+
+    java.util.Collections.shuffle(TotalIcons);
+    AllPages.clear();
+
+    // Select a new target icon
+    Icon newTargetIcon = TotalIcons.get((int)targetIndex);
+
+    targetIcon = new Icon(newTargetIcon.pokemon, newTargetIcon.name, 0, 0);
+    targetIcon.x = screenWidth - 300;;
+    targetIcon.y = screenHeight / 2 - targetIcon.pokemon.height / 2;
+    targetName = targetIcon.name;
+    println("New Target Icon: " + targetName);
+
+
+    for (int i = 0; i < totalPages; i++) {
+        Page newPage = new Page(new Icon[pageIconsNum], i);
+        for (int j = 0; j < pageIconsNum; j++) {
+          int index = i * pageIconsNum + j;
+          if (index < TotalIcons.size()) {
+            Icon icon = TotalIcons.get(index);
+            float iconW = (screenWidth - 400) / cols; 
+            float iconH = screenHeight / rows;
+            float x = (j % cols) * iconW;
+            float y = (j / cols) * iconH;
+            icon.x = x;
+            icon.y = y;
+            newPage.icons[j] = icon;
+          }
+        }
+        AllPages.add(newPage);
+    }
+
+    targetFound = false;
   }
 }
