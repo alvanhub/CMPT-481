@@ -23,14 +23,14 @@ String targetName = "";
 float targetX;
 float targetY;
 float targetIndex;
-float previousTargetIndexs[] = new float[iconNum];
+boolean[] previousTargetIndexs = new boolean[iconNum];
 
 
 //// Page Info
 int currentPage = 0;
 int totalPages; 
-int pageSizes[] = {2, 1, 4, 8, 16};
-int delaySizes[] = {200, 300, 700, 3000, 6000};
+int pageSizes[] = {1, 2, 4, 8, 16};
+int delaySizes[] = {50, 300, 500, 4000, 6000};
 
 
 //// key info
@@ -63,12 +63,16 @@ int conditionCounter = 0;
 Condition currentCondition;
 
 
+Table baseRecords;
+
+
 
 
 class Icon {
   PImage pokemon;
   String name;
   float x, y;
+  float w, h;
   
   Icon(PImage pokemon, String name, float x, float y) {
     this.pokemon = pokemon;
@@ -78,12 +82,12 @@ class Icon {
   }
 
   boolean isHovering() {
-    return mouseX >= x && mouseX <= x + pokemon.width &&
-           mouseY >= y && mouseY <= y + pokemon.height;
+    return mouseX >= x && mouseX <= x + w &&
+           mouseY >= y && mouseY <= y + h;
   }
 
   void display () {
-    image(pokemon, x, y);
+    image(pokemon, x, y, w, h);
 
   }
 }
@@ -126,18 +130,29 @@ class Condition {
 
 
 void createPages() {
-      float iconW = (screenWidth - 400) / currentCondition.gridsize; 
-      float iconH = screenHeight / currentCondition.gridsize;
-      int totalPages = ceil((float)currentCondition.numIcons / (currentCondition.gridsize * currentCondition.gridsize));
+      float cellW = (screenWidth - 400) / (float)currentCondition.gridsize; 
+      float cellH = screenHeight / (float)currentCondition.gridsize;
+
+      float maxCellW = (screenWidth - 400) / 4.0;
+      float maxCellH = screenHeight / 4.0;
+      float maxSize = min(maxCellW, maxCellH) * 0.8;
+      float baseIconSize = min(cellW, cellH) * 0.8;
+      float iconSize = min(baseIconSize, maxSize);
+
+      totalPages = ceil((float)currentCondition.numIcons / (currentCondition.gridsize * currentCondition.gridsize));
       pageIconsNum = currentCondition.gridsize * currentCondition.gridsize;
 
+      previousTargetIndexs = new boolean[currentCondition.numIcons];
       targetIndex = random(currentCondition.numIcons);
+      previousTargetIndexs[(int)targetIndex] = true;
 
       Icon newTargetIcon = TotalIcons.get((int)targetIndex);
 
       targetIcon = new Icon(newTargetIcon.pokemon, newTargetIcon.name, 0, 0);
       targetIcon.x = screenWidth - 300;;
       targetIcon.y = screenHeight / 2 - targetIcon.pokemon.height / 2;
+      targetIcon.w = 150; 
+      targetIcon.h = 150;
       targetName = targetIcon.name;
       println("New Target Icon: " + targetName);
       
@@ -147,10 +162,15 @@ void createPages() {
             int index = i * pageIconsNum + j;
             if (index < TotalIcons.size()) {
               Icon icon = TotalIcons.get(index);
-              float x = (j % currentCondition.gridsize) * iconW;
-              float y = (j / currentCondition.gridsize) * iconH;
+
+              int col = j % currentCondition.gridsize;
+              int row = j / currentCondition.gridsize;
+              float x = (col * cellW) + (cellW - iconSize) / 2;
+              float y = (row * cellH) + (cellH - iconSize) / 2;
               icon.x = x;
               icon.y = y;
+              icon.w = iconSize; 
+              icon.h = iconSize;
               newPage.icons[j] = icon;
             }
           }
@@ -174,13 +194,16 @@ void setup() {
     }
   }
 
+  baseRecords = new Table();
+  baseRecords.addColumn("Condition");
+  baseRecords.addColumn("SetSize");
+  baseRecords.addColumn("PageSize");
+  baseRecords.addColumn("NavDelay");
+  baseRecords.addColumn("Trial Number");
+  baseRecords.addColumn("Time");
+  baseRecords.addColumn("Errors");
 
   reader = createReader("filenames.txt"); 
-
-  float iconW = (screenWidth - 400) / cols; 
-  float iconH = screenHeight / rows;
-
-
   
 
   for (int i = 0; i < iconNum; i++) {
@@ -194,39 +217,17 @@ void setup() {
       // Stop reading because of an error or file is empty
       break;
     }else {
-      if (i == (int)targetIndex) {
-        println("Target Icon: " + name);
-        targetName = name;
-      }
+
       PImage tempImg = loadImage("icons/" + name);
-      tempImg.resize((int)iconW, (int)iconH);
       TotalIcons.add(new Icon(tempImg, name, 0, 0)); // give temporary position for now
     }
   }
 
 
 
-  // PImage targetImg = loadImage("icons/" + targetName);
-  // targetImg.resize((int)iconW, (int)iconH);
-  // targetIcon = new Icon(targetImg, targetName, screenWidth - 300, screenHeight / 2 - iconH / 2);
-
   java.util.Collections.shuffle(TotalIcons);
 
-  // for (int i = 0; i < totalPages; i++) {
-  //     Page newPage = new Page(new Icon[pageIconsNum], i);
-  //     for (int j = 0; j < pageIconsNum; j++) {
-  //       int index = i * pageIconsNum + j;
-  //       if (index < TotalIcons.size()) {
-  //         Icon icon = TotalIcons.get(index);
-  //         float x = (j % cols) * iconW;
-  //         float y = (j / cols) * iconH;
-  //         icon.x = x;
-  //         icon.y = y;
-  //         newPage.icons[j] = icon;
-  //       }
-  //     }
-  //     AllPages.add(newPage);
-  // }
+  
 
   println("Total icons loaded: " + TotalIcons.size());
   println("Total pages created: " + AllPages.size());
@@ -285,16 +286,6 @@ void draw() {
     case FINISHED:
       // End Screen
       background(200);
-      // fill(0);
-      // textSize(32);
-      // textAlign(CENTER, CENTER);
-      // text("Target " + targetName + " Found,", screenWidth / 2, screenHeight / 2 - 60);
-      // textSize(24);
-      // text("Elapsed Time: " + (elapsedTime / 1000) + " seconds,", screenWidth / 2, screenHeight / 2);
-      // text("Number of Errors: " + numErrors + ",", screenWidth / 2, screenHeight / 2 + 40);
-      // text("Number of Page Changes: " + numPageChanges + ",", screenWidth / 2, screenHeight / 2 + 80);
-      // textSize(18);
-      // text("Click anywhere to start again.", screenWidth / 2, screenHeight / 2 + 140);
       text("COMPLETED", screenWidth / 2, screenHeight / 2);
       break;
   }
@@ -311,6 +302,11 @@ void keyReleased() {
 }
 
 void keyPressed() {
+  if (phase == ExperimentPhase.INSTRUCTIONS && (key == 'e' || key == 'E')) {
+     println("Exploration Mode Activated (Not yet implemented)");
+     // You will implement the exploration logic here later
+  }
+
   if (keyCode == RIGHT) {
     if (!rightPressed) { 
       if (currentPage < totalPages - 1) {
@@ -338,8 +334,16 @@ void mousePressed() {
   switch (phase) {
     case INSTRUCTIONS:
       currentCondition = Conditions.get(conditionCounter);
-      float iconW = (screenWidth - 400) / currentCondition.gridsize; 
-      float iconH = screenHeight / currentCondition.gridsize;
+      // float iconW = (screenWidth - 400) / currentCondition.gridsize; 
+      // float iconH = screenHeight / currentCondition.gridsize;
+      float cellW = (screenWidth - 400) / (float)currentCondition.gridsize; 
+      float cellH = screenHeight / (float)currentCondition.gridsize;
+      float maxCellW = (screenWidth - 400) / 4.0;
+      float maxCellH = screenHeight / 4.0;
+      float maxSize = min(maxCellW, maxCellH) * 0.8;
+      float baseIconSize = min(cellW, cellH) * 0.8;
+      float iconSize = min(baseIconSize, maxSize);
+
       totalPages = ceil((float)currentCondition.numIcons / (currentCondition.gridsize * currentCondition.gridsize));
       pageIconsNum = currentCondition.gridsize * currentCondition.gridsize;
 
@@ -350,6 +354,8 @@ void mousePressed() {
       targetIcon = new Icon(newTargetIcon.pokemon, newTargetIcon.name, 0, 0);
       targetIcon.x = screenWidth - 300;;
       targetIcon.y = screenHeight / 2 - targetIcon.pokemon.height / 2;
+      targetIcon.w = 150; 
+      targetIcon.h = 150;
       targetName = targetIcon.name;
       println("New Target Icon: " + targetName);
       
@@ -359,10 +365,14 @@ void mousePressed() {
             int index = i * pageIconsNum + j;
             if (index < TotalIcons.size()) {
               Icon icon = TotalIcons.get(index);
-              float x = (j % currentCondition.gridsize) * iconW;
-              float y = (j / currentCondition.gridsize) * iconH;
+              int col = j % currentCondition.gridsize;
+              int row = j / currentCondition.gridsize;
+              float x = (col * cellW) + (cellW - iconSize) / 2;
+              float y = (row * cellH) + (cellH - iconSize) / 2;
               icon.x = x;
               icon.y = y;
+              icon.w = iconSize; 
+              icon.h = iconSize;
               newPage.icons[j] = icon;
             }
           }
@@ -387,20 +397,33 @@ void mousePressed() {
         if (icon != null && icon.isHovering() && icon.name.equals(targetName)) {
           println("target found");
           elapsedTime = millis() - trialStartTime;
+
+          TableRow newRow = baseRecords.addRow();
+          newRow.setString("Condition", currentCondition.conditionName);
+          newRow.setInt("SetSize", currentCondition.numIcons);
+          newRow.setInt("PageSize", currentCondition.gridsize);
+          newRow.setInt("NavDelay", currentCondition.navDelay);
+          newRow.setInt("Trial Number", trialCounter + 1);
+          newRow.setInt("Time", elapsedTime);
+          newRow.setInt("Errors", numErrors);
+
           println("Stats: " + currentCondition.conditionName + ", Time: " + elapsedTime/1000 + " s, Errors: " + numErrors + ", Page Changes: " + numPageChanges);
           println("-----------------------");
           if (trialCounter < currentCondition.numTrials - 1) {
-            previousTargetIndexs[(int)targetIndex] = targetIndex;
 
             targetIndex = random(currentCondition.numIcons);
-            while (previousTargetIndexs[(int)targetIndex] == targetIndex) {
+            while (previousTargetIndexs[(int)targetIndex] == true) {
               targetIndex = random(currentCondition.numIcons);
             }
+            previousTargetIndexs[(int)targetIndex] = true;
 
             Icon tempIcon = TotalIcons.get((int)targetIndex);
             targetIcon = new Icon(tempIcon.pokemon, tempIcon.name, 0, 0);
+            targetIcon.w = 150;  
+            targetIcon.h = 150;
             targetIcon.x = screenWidth - 300;;
-            targetIcon.y = screenHeight / 2 - targetIcon.pokemon.height / 2;
+            targetIcon.y = screenHeight / 2 - targetIcon.h / 2;
+            
             targetName = targetIcon.name;
             println("New Target Icon: " + targetName);
 
@@ -424,7 +447,7 @@ void mousePressed() {
             AllPages.clear();
             if (conditionCounter < Conditions.size()) {
               currentCondition = Conditions.get(conditionCounter);
-              previousTargetIndexs = new float[currentCondition.numIcons];
+
               createPages();
               phase = ExperimentPhase.BEFORE_CONDITION;
             } else {
@@ -438,53 +461,11 @@ void mousePressed() {
       }
       return;
     case FINISHED:
-      // Reset the game
-      // currentPage = 0;
-      // numErrors = 0;
-      // numPageChanges = 0;
-      // elapsedTime = 0;
-      // lastPageTime = millis();
 
-      // // store previous target indexes
-      // previousTargetIndexs[(int)targetIndex] = targetIndex;
-
-      // targetIndex = random(iconNum);
-      // while (previousTargetIndexs[(int)targetIndex] == targetIndex) {
-      //   targetIndex = random(iconNum);
-      // }
-
-      // java.util.Collections.shuffle(TotalIcons);
-      // AllPages.clear();
-
-      // // Select a new target icon
-      // Icon newTargetIcon = TotalIcons.get((int)targetIndex);
-
-      // targetIcon = new Icon(newTargetIcon.pokemon, newTargetIcon.name, 0, 0);
-      // targetIcon.x = screenWidth - 300;;
-      // targetIcon.y = screenHeight / 2 - targetIcon.pokemon.height / 2;
-      // targetName = targetIcon.name;
-      // println("New Target Icon: " + targetName);
-
-
-      // for (int i = 0; i < totalPages; i++) {
-      //     Page newPage = new Page(new Icon[pageIconsNum], i);
-      //     for (int j = 0; j < pageIconsNum; j++) {
-      //       int index = i * pageIconsNum + j;
-      //       if (index < TotalIcons.size()) {
-      //         Icon icon = TotalIcons.get(index);
-      //         float iconW = (screenWidth - 400) / cols; 
-      //         float iconH = screenHeight / rows;
-      //         float x = (j % cols) * iconW;
-      //         float y = (j / cols) * iconH;
-      //         icon.x = x;
-      //         icon.y = y;
-      //         newPage.icons[j] = icon;
-      //       }
-      //     }
-      //     AllPages.add(newPage);
-      // }
 
       println("COMPLETED");
+      saveTable(baseRecords, "experiment_results.csv");
+      println("Data saved to experiment_results.csv");
       noLoop();
       return;
   }
