@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_768_page_16_delay_6000,768,16,6000,51231,0,2,ralts.jpg
+Size_768_page_16_delay_6000,768,16,6000,7828,0,0,vanilluxe.jpg
+Size_768_page_16_delay_6000,768,16,6000,3867,0,1,guzzlord.jpg
+Size_768_page_16_delay_6000,768,16,6000,24734,0,1,audino.jpg

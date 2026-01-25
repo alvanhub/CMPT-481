@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_512_page_8_delay_4000,512,8,4000,3499,0,0,latias.jpg
+Size_512_page_8_delay_4000,512,8,4000,11252,0,4,corsola.jpg
+Size_512_page_8_delay_4000,512,8,4000,19326,0,7,spectrier.jpg
+Size_512_page_8_delay_4000,512,8,4000,44569,0,9,ludicolo.jpg

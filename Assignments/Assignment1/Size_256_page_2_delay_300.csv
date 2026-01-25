@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_256_page_2_delay_300,256,2,300,8483,0,12,espurr.jpg
+Size_256_page_2_delay_300,256,2,300,3936,0,6,foongus.jpg
+Size_256_page_2_delay_300,256,2,300,41921,0,58,lopunny.jpg
+Size_256_page_2_delay_300,256,2,300,3717,0,6,iron-thorns.jpg

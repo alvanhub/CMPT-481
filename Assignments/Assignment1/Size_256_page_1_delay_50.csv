@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_256_page_1_delay_50,256,1,50,40765,0,204,iron-valiant.jpg
+Size_256_page_1_delay_50,256,1,50,30385,0,144,mismagius.jpg
+Size_256_page_1_delay_50,256,1,50,18717,0,82,mantine.jpg
+Size_256_page_1_delay_50,256,1,50,11542,0,53,trumbeak.jpg

@@ -52,7 +52,8 @@ enum ExperimentPhase {
   BEFORE_CONDITION,
   BEFORE_TRIAL,
   TRIAL,
-  FINISHED
+  FINISHED,
+  EXPLORATION
 }
 ExperimentPhase phase = ExperimentPhase.INSTRUCTIONS;
 
@@ -64,6 +65,10 @@ Condition currentCondition;
 
 
 Table baseRecords;
+Table exploreTable;
+
+boolean exploring = false;
+int exploreIndex = 0;
 
 
 
@@ -200,8 +205,20 @@ void setup() {
   baseRecords.addColumn("PageSize");
   baseRecords.addColumn("NavDelay");
   baseRecords.addColumn("Trial Number");
-  baseRecords.addColumn("Time");
+  baseRecords.addColumn("Time (ms)");
   baseRecords.addColumn("Errors");
+  baseRecords.addColumn("PageChanges");
+  baseRecords.addColumn("Target Icon");
+
+  exploreTable = new Table();
+  exploreTable.addColumn("Condition");
+  exploreTable.addColumn("SetSize");
+  exploreTable.addColumn("PageSize");
+  exploreTable.addColumn("NavDelay");
+  exploreTable.addColumn("Time (ms)");
+  exploreTable.addColumn("Errors");
+  exploreTable.addColumn("PageChanges");
+  exploreTable.addColumn("Target Icon");
 
   reader = createReader("filenames.txt"); 
   
@@ -250,10 +267,14 @@ void draw() {
       textSize(24);
       textAlign(CENTER, CENTER);
       text("Condition: " + currentCondition.conditionName, screenWidth / 2, screenHeight / 2);
+      textSize(12);
+      text("Click to continue.", screenWidth / 2, screenHeight / 2 + 40);
       break;
     case BEFORE_TRIAL:
       text("Trial " + (trialCounter + 1) + " of " + currentCondition.numTrials, screenWidth / 2, screenHeight / 2 - 40);
       text("Find the target icon: " + targetName, screenWidth / 2, screenHeight / 2);
+      textSize(12);
+      text("Click to continue.", screenWidth / 2, screenHeight / 2 + 40);
       break;
     case TRIAL:
       int currentTime = millis();
@@ -288,6 +309,31 @@ void draw() {
       background(200);
       text("COMPLETED", screenWidth / 2, screenHeight / 2);
       break;
+
+    case EXPLORATION:
+      background(255);
+      fill(0);
+      textAlign(CENTER, TOP);
+      textSize(32);
+      text("EXPLORATION MODE", screenWidth/2, 40);
+
+      textSize(18);
+      text("Press UP/DOWN to select. Press ENTER to run.", screenWidth/2, 80);
+
+      textSize(12);
+      text("Press 'F' to return to main experiment.", screenWidth/2, 100);
+
+      textSize(18);
+      for (int i = 0; i < Conditions.size(); i++) {
+        if (i == exploreIndex) {
+          fill(0, 0, 255); 
+          text("-> " + Conditions.get(i).conditionName, screenWidth/2 - 200, 120 + (i * 25));
+        } else {
+          fill(0);
+          text("   " + Conditions.get(i).conditionName, screenWidth/2 - 200, 120 + (i * 25));
+        }
+      }
+      return;
   }
 
 
@@ -302,9 +348,41 @@ void keyReleased() {
 }
 
 void keyPressed() {
-  if (phase == ExperimentPhase.INSTRUCTIONS && (key == 'e' || key == 'E')) {
-     println("Exploration Mode Activated (Not yet implemented)");
-     // You will implement the exploration logic here later
+  if (phase == ExperimentPhase.INSTRUCTIONS && (keyCode == 'e' || keyCode == 'E')) {
+     phase = ExperimentPhase.EXPLORATION;
+     exploring = true;
+     println("entering exploration mode");
+     return;
+  }
+
+  if (phase == ExperimentPhase.EXPLORATION) {
+    if (keyCode == UP) {
+      if (exploreIndex > 0)  {
+        exploreIndex--;
+      }
+    } else if (keyCode == DOWN) {
+      if (exploreIndex < Conditions.size() - 1) {
+        exploreIndex++;
+      }
+    } else if (keyCode == ENTER || keyCode == RETURN) {
+      conditionCounter = exploreIndex;
+      currentCondition = Conditions.get(conditionCounter);
+      trialCounter = 0;
+      currentPage = 0;
+      numErrors = 0;
+      numPageChanges = 0;
+      java.util.Collections.shuffle(TotalIcons);
+      AllPages.clear();
+      createPages();
+      phase = ExperimentPhase.BEFORE_CONDITION;
+    }
+
+    if (keyCode == 'f' || keyCode == 'F') {
+      println("returning to main experiment");
+      phase = ExperimentPhase.INSTRUCTIONS;
+      exploring = false;
+    }
+    return;
   }
 
   if (keyCode == RIGHT) {
@@ -398,14 +476,28 @@ void mousePressed() {
           println("target found");
           elapsedTime = millis() - trialStartTime;
 
+          if (exploring) {
+            TableRow exploreRow = exploreTable.addRow();
+            exploreRow.setString("Condition", currentCondition.conditionName);
+            exploreRow.setInt("SetSize", currentCondition.numIcons);
+            exploreRow.setInt("PageSize", currentCondition.gridsize);
+            exploreRow.setInt("NavDelay", currentCondition.navDelay);
+            exploreRow.setInt("Time (ms)", elapsedTime);
+            exploreRow.setInt("Errors", numErrors);
+            exploreRow.setInt("PageChanges", numPageChanges);
+            exploreRow.setString("Target Icon", targetName);
+          }
+
           TableRow newRow = baseRecords.addRow();
           newRow.setString("Condition", currentCondition.conditionName);
           newRow.setInt("SetSize", currentCondition.numIcons);
           newRow.setInt("PageSize", currentCondition.gridsize);
           newRow.setInt("NavDelay", currentCondition.navDelay);
           newRow.setInt("Trial Number", trialCounter + 1);
-          newRow.setInt("Time", elapsedTime);
+          newRow.setInt("Time (ms)", elapsedTime);
           newRow.setInt("Errors", numErrors);
+          newRow.setInt("PageChanges", numPageChanges);
+          newRow.setString("Target Icon", targetName);
 
           println("Stats: " + currentCondition.conditionName + ", Time: " + elapsedTime/1000 + " s, Errors: " + numErrors + ", Page Changes: " + numPageChanges);
           println("-----------------------");
@@ -436,22 +528,37 @@ void mousePressed() {
             trialCounter++;
             phase = ExperimentPhase.BEFORE_TRIAL;
           } else {
-            trialCounter = 0;
-            currentPage = 0;
-            numErrors = 0;
-            numPageChanges = 0;
-            elapsedTime = 0;
-            lastPageTime = millis();
-            conditionCounter++;
-            java.util.Collections.shuffle(TotalIcons);
-            AllPages.clear();
-            if (conditionCounter < Conditions.size()) {
-              currentCondition = Conditions.get(conditionCounter);
-
-              createPages();
-              phase = ExperimentPhase.BEFORE_CONDITION;
+            if (exploring) {
+              currentCondition = Conditions.get(exploreIndex);
+              saveTable(exploreTable, currentCondition.conditionName + ".csv");
+              exploreTable = new Table();
+              exploreTable.addColumn("Condition");
+              exploreTable.addColumn("SetSize");
+              exploreTable.addColumn("PageSize");
+              exploreTable.addColumn("NavDelay");
+              exploreTable.addColumn("Time (ms)");
+              exploreTable.addColumn("Errors");
+              exploreTable.addColumn("PageChanges");
+              exploreTable.addColumn("Target Icon");
+              phase = ExperimentPhase.EXPLORATION;
             } else {
-              phase = ExperimentPhase.FINISHED;
+              trialCounter = 0;
+              currentPage = 0;
+              numErrors = 0;
+              numPageChanges = 0;
+              elapsedTime = 0;
+              lastPageTime = millis();
+              conditionCounter++;
+              java.util.Collections.shuffle(TotalIcons);
+              AllPages.clear();
+              if (conditionCounter < Conditions.size()) {
+                currentCondition = Conditions.get(conditionCounter);
+
+                createPages();
+                phase = ExperimentPhase.BEFORE_CONDITION;
+              } else {
+                phase = ExperimentPhase.FINISHED;
+              }
             }
           }
         } else if (icon != null && icon.isHovering()) {

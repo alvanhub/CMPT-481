@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_1024_page_8_delay_4000,1024,8,4000,52646,0,11,tinkatuff.jpg
+Size_1024_page_8_delay_4000,1024,8,4000,200334,0,34,baxcalibur.jpg
+Size_1024_page_8_delay_4000,1024,8,4000,132850,0,23,togepi.jpg
+Size_1024_page_8_delay_4000,1024,8,4000,22992,0,1,flabebe.jpg

@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_512_page_16_delay_6000,512,16,6000,66870,0,3,marill.jpg
+Size_512_page_16_delay_6000,512,16,6000,32505,0,2,quaquaval.jpg
+Size_512_page_16_delay_6000,512,16,6000,81692,0,2,escavalier.jpg
+Size_512_page_16_delay_6000,512,16,6000,108638,0,4,gardevoir.jpg

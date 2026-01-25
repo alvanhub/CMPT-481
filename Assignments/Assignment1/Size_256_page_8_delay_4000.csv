@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_256_page_8_delay_4000,256,8,4000,15326,0,1,mankey.jpg
+Size_256_page_8_delay_4000,256,8,4000,7553,0,1,omanyte.jpg
+Size_256_page_8_delay_4000,256,8,4000,6332,0,2,mimikyu.jpg
+Size_256_page_8_delay_4000,256,8,4000,2218,0,0,terrakion.jpg

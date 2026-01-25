@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_256_page_4_delay_500,256,4,500,23011,0,23,venomoth.jpg
+Size_256_page_4_delay_500,256,4,500,9812,0,9,popplio.jpg
+Size_256_page_4_delay_500,256,4,500,20459,0,15,toxel.jpg
+Size_256_page_4_delay_500,256,4,500,20321,0,10,swablu.jpg

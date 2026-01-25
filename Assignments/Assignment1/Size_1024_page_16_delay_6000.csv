@@ -1,0 +1,5 @@
+Condition,SetSize,PageSize,NavDelay,Time (ms),Errors,PageChanges,Target Icon
+Size_1024_page_16_delay_6000,1024,16,6000,201633,0,8,jangmo-o.jpg
+Size_1024_page_16_delay_6000,1024,16,6000,42391,0,1,swoobat.jpg
+Size_1024_page_16_delay_6000,1024,16,6000,97415,0,6,togetic.jpg
+Size_1024_page_16_delay_6000,1024,16,6000,19687,0,5,woobat.jpg
