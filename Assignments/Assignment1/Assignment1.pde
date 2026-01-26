@@ -11,9 +11,8 @@ int rows = 8;
 int screenWidth = 1200;
 int screenHeight = 800;
 
-int gridsize = 8;
-int pageIconsNum = 64;
-int iconNum = 1025;
+int pageIconsNum = 64; // number of icons per page, default values is 8x8=64
+int iconNum = 1025; // total number of icons available
 int setSizes[] = {256, 512, 768, 1024};
 
 
@@ -64,6 +63,7 @@ int conditionCounter = 0;
 Condition currentCondition;
 
 
+//// CSV files for recording data
 Table baseRecords;
 Table exploreTable;
 
@@ -72,7 +72,7 @@ int exploreIndex = 0;
 
 
 
-
+//// Icon class for displaying pokemon icons, a single class = a single icon
 class Icon {
   PImage pokemon;
   String name;
@@ -97,6 +97,7 @@ class Icon {
   }
 }
 
+//// Page class to hold a collection of icons for each page
 class Page {
   Icon[] icons;
   int pageID;
@@ -107,7 +108,6 @@ class Page {
   }
   
   void displayPage() {
-    // Logic to display icons for the current page
     for (int i = 0; i < icons.length; i++) {
       if (icons[i] != null) { 
         icons[i].display();
@@ -117,6 +117,7 @@ class Page {
 }
 
 
+//// Condition class to hold specific conditions for different page sizes and set sizes
 class Condition {
   String conditionName;
   int numIcons;
@@ -134,6 +135,7 @@ class Condition {
 }
 
 
+//// Function to create pages based on current condition
 void createPages() {
       float cellW = (screenWidth - 400) / (float)currentCondition.gridsize; 
       float cellH = screenHeight / (float)currentCondition.gridsize;
@@ -189,7 +191,10 @@ void settings() {
   size(screenWidth, screenHeight);
 }
 
+//// Initial setup for conditions, data tables, and icon loading is done here
 void setup() {
+  //// condition setup
+  conditionCounter = 0;
   for (int setSize : setSizes) {
     for (int i = 0; i < pageSizes.length; i++) {
       int pageSize = pageSizes[i];
@@ -199,6 +204,7 @@ void setup() {
     }
   }
 
+  //// data table setup
   baseRecords = new Table();
   baseRecords.addColumn("Condition");
   baseRecords.addColumn("SetSize");
@@ -223,6 +229,7 @@ void setup() {
   reader = createReader("filenames.txt"); 
   
 
+  // Load all icons from filenames.txt
   for (int i = 0; i < iconNum; i++) {
     try {
     name = reader.readLine();
@@ -250,18 +257,23 @@ void setup() {
   println("Total pages created: " + AllPages.size());
 }
 
+
+//// Displaying the different stages of the experiment based on the current phase
 void draw() {
   background(255);
 
+  
   switch (phase) {
+    //// display initial instructions
     case INSTRUCTIONS:
 
       fill(0);
       textSize(24);
       textAlign(CENTER, CENTER);
-      text("INSTRUCTIONS\n\nUse the LEFT and RIGHT arrow keys to navigate through pages of icons.\n\nClick on the target icon displayed on the right side of the screen as quickly and accurately as possible.\n\nClick anywhere to begin.", screenWidth / 2, screenHeight / 2);
+      text("INSTRUCTIONS\n\nUse the LEFT and RIGHT arrow keys to navigate through pages of icons.\n\nClick on the target icon displayed on the right side of the screen as quickly and accurately as possible.\n\nPress Space Bar to begin.", screenWidth / 2, screenHeight / 2);
 
       return;
+    //// display the condition of the upcoming trials
     case BEFORE_CONDITION:
       fill(0);
       textSize(24);
@@ -270,12 +282,14 @@ void draw() {
       textSize(12);
       text("Click to continue.", screenWidth / 2, screenHeight / 2 + 40);
       break;
+    //// display which trial you are currently on
     case BEFORE_TRIAL:
       text("Trial " + (trialCounter + 1) + " of " + currentCondition.numTrials, screenWidth / 2, screenHeight / 2 - 40);
       text("Find the target icon: " + targetName, screenWidth / 2, screenHeight / 2);
       textSize(12);
       text("Click to continue.", screenWidth / 2, screenHeight / 2 + 40);
       break;
+    //// Trial display, showing the grid of icons and handling navigation
     case TRIAL:
       int currentTime = millis();
       
@@ -304,12 +318,13 @@ void draw() {
       text("Page: " + (currentPage + 1) + " / " + totalPages, 50, height - 50);
       
       break;
+    //// End Screen
     case FINISHED:
-      // End Screen
       background(200);
       text("COMPLETED", screenWidth / 2, screenHeight / 2);
       break;
 
+    //// Exploration mode menu, to select and run specific conditions
     case EXPLORATION:
       background(255);
       fill(0);
@@ -339,6 +354,7 @@ void draw() {
 
 }
 
+//// for page navigation on immediate press and release
 void keyReleased() {
   if (keyCode == RIGHT) {
     rightPressed = false;
@@ -348,13 +364,63 @@ void keyReleased() {
 }
 
 void keyPressed() {
-  if (phase == ExperimentPhase.INSTRUCTIONS && (keyCode == 'e' || keyCode == 'E')) {
+  //// to enter exploration mode from instructions
+  if (phase == ExperimentPhase.INSTRUCTIONS && (key == 'e' || key == 'E')) {
      phase = ExperimentPhase.EXPLORATION;
      exploring = true;
      println("entering exploration mode");
      return;
+  } else if (key == ' ' && phase == ExperimentPhase.INSTRUCTIONS) {
+    //// Calculating icon sizes and positions based on current condition
+      currentCondition = Conditions.get(conditionCounter);
+      float cellW = (screenWidth - 400) / (float)currentCondition.gridsize; 
+      float cellH = screenHeight / (float)currentCondition.gridsize;
+      float maxCellW = (screenWidth - 400) / 4.0;
+      float maxCellH = screenHeight / 4.0;
+      float maxSize = min(maxCellW, maxCellH) * 0.8;
+      float baseIconSize = min(cellW, cellH) * 0.8;
+      float iconSize = min(baseIconSize, maxSize);
+
+      totalPages = ceil((float)currentCondition.numIcons / (currentCondition.gridsize * currentCondition.gridsize));
+      pageIconsNum = currentCondition.gridsize * currentCondition.gridsize;
+
+      //// selecting the target icon for the trial
+      targetIndex = random(currentCondition.numIcons);
+
+      Icon newTargetIcon = TotalIcons.get((int)targetIndex);
+
+      targetIcon = new Icon(newTargetIcon.pokemon, newTargetIcon.name, 0, 0);
+      targetIcon.x = screenWidth - 300;;
+      targetIcon.y = screenHeight / 2 - targetIcon.pokemon.height / 2;
+      targetIcon.w = 150; 
+      targetIcon.h = 150;
+      targetName = targetIcon.name;
+      println("New Target Icon: " + targetName);
+      
+      //// Logic for positioning all icons, and adding them to pages
+      for (int i = 0; i < totalPages; i++) {
+          Page newPage = new Page(new Icon[pageIconsNum], i);
+          for (int j = 0; j < pageIconsNum; j++) {
+            int index = i * pageIconsNum + j;
+            if (index < TotalIcons.size()) {
+              Icon icon = TotalIcons.get(index);
+              int col = j % currentCondition.gridsize;
+              int row = j / currentCondition.gridsize;
+              float x = (col * cellW) + (cellW - iconSize) / 2;
+              float y = (row * cellH) + (cellH - iconSize) / 2;
+              icon.x = x;
+              icon.y = y;
+              icon.w = iconSize; 
+              icon.h = iconSize;
+              newPage.icons[j] = icon;
+            }
+          }
+          AllPages.add(newPage);
+      }
+      phase = ExperimentPhase.BEFORE_CONDITION;
   }
 
+  //// exploration mode navigation and selection
   if (phase == ExperimentPhase.EXPLORATION) {
     if (keyCode == UP) {
       if (exploreIndex > 0)  {
@@ -377,7 +443,8 @@ void keyPressed() {
       phase = ExperimentPhase.BEFORE_CONDITION;
     }
 
-    if (keyCode == 'f' || keyCode == 'F') {
+    //// exit exploration mode and return to main experiment
+    if (key == 'f' || key == 'F') {
       println("returning to main experiment");
       phase = ExperimentPhase.INSTRUCTIONS;
       exploring = false;
@@ -385,6 +452,7 @@ void keyPressed() {
     return;
   }
 
+  //// page navigation during trials
   if (keyCode == RIGHT) {
     if (!rightPressed) { 
       if (currentPage < totalPages - 1) {
@@ -410,54 +478,7 @@ void keyPressed() {
 
 void mousePressed() {
   switch (phase) {
-    case INSTRUCTIONS:
-      currentCondition = Conditions.get(conditionCounter);
-      // float iconW = (screenWidth - 400) / currentCondition.gridsize; 
-      // float iconH = screenHeight / currentCondition.gridsize;
-      float cellW = (screenWidth - 400) / (float)currentCondition.gridsize; 
-      float cellH = screenHeight / (float)currentCondition.gridsize;
-      float maxCellW = (screenWidth - 400) / 4.0;
-      float maxCellH = screenHeight / 4.0;
-      float maxSize = min(maxCellW, maxCellH) * 0.8;
-      float baseIconSize = min(cellW, cellH) * 0.8;
-      float iconSize = min(baseIconSize, maxSize);
-
-      totalPages = ceil((float)currentCondition.numIcons / (currentCondition.gridsize * currentCondition.gridsize));
-      pageIconsNum = currentCondition.gridsize * currentCondition.gridsize;
-
-      targetIndex = random(currentCondition.numIcons);
-
-      Icon newTargetIcon = TotalIcons.get((int)targetIndex);
-
-      targetIcon = new Icon(newTargetIcon.pokemon, newTargetIcon.name, 0, 0);
-      targetIcon.x = screenWidth - 300;;
-      targetIcon.y = screenHeight / 2 - targetIcon.pokemon.height / 2;
-      targetIcon.w = 150; 
-      targetIcon.h = 150;
-      targetName = targetIcon.name;
-      println("New Target Icon: " + targetName);
-      
-      for (int i = 0; i < totalPages; i++) {
-          Page newPage = new Page(new Icon[pageIconsNum], i);
-          for (int j = 0; j < pageIconsNum; j++) {
-            int index = i * pageIconsNum + j;
-            if (index < TotalIcons.size()) {
-              Icon icon = TotalIcons.get(index);
-              int col = j % currentCondition.gridsize;
-              int row = j / currentCondition.gridsize;
-              float x = (col * cellW) + (cellW - iconSize) / 2;
-              float y = (row * cellH) + (cellH - iconSize) / 2;
-              icon.x = x;
-              icon.y = y;
-              icon.w = iconSize; 
-              icon.h = iconSize;
-              newPage.icons[j] = icon;
-            }
-          }
-          AllPages.add(newPage);
-      }
-      phase = ExperimentPhase.BEFORE_CONDITION;
-      return;
+    //// Simple logic to continue to Trial phase after displaying condition info and trial info
     case BEFORE_CONDITION:
       phase = ExperimentPhase.BEFORE_TRIAL;
       return;
@@ -466,16 +487,19 @@ void mousePressed() {
       phase = ExperimentPhase.TRIAL;
       return;
 
+    //// Logic for checking for correct icon selection during trials
     case TRIAL:
       Page activePage = AllPages.get(currentPage);
     
       for (int i = 0; i < activePage.icons.length; i++) {
         Icon icon = activePage.icons[i];
         
+        //// check if target was selected
         if (icon != null && icon.isHovering() && icon.name.equals(targetName)) {
           println("target found");
           elapsedTime = millis() - trialStartTime;
 
+          //// only record exploration data if in exploration mode
           if (exploring) {
             TableRow exploreRow = exploreTable.addRow();
             exploreRow.setString("Condition", currentCondition.conditionName);
@@ -501,8 +525,11 @@ void mousePressed() {
 
           println("Stats: " + currentCondition.conditionName + ", Time: " + elapsedTime/1000 + " s, Errors: " + numErrors + ", Page Changes: " + numPageChanges);
           println("-----------------------");
+
+          //// check if trials have been completed for the current condition
           if (trialCounter < currentCondition.numTrials - 1) {
 
+            //// select a new target icon that hasn't been used yet
             targetIndex = random(currentCondition.numIcons);
             while (previousTargetIndexs[(int)targetIndex] == true) {
               targetIndex = random(currentCondition.numIcons);
@@ -528,6 +555,7 @@ void mousePressed() {
             trialCounter++;
             phase = ExperimentPhase.BEFORE_TRIAL;
           } else {
+            //// Record data and go back to exploration mode once selected condition is complete
             if (exploring) {
               currentCondition = Conditions.get(exploreIndex);
               saveTable(exploreTable, currentCondition.conditionName + ".csv");
@@ -542,6 +570,7 @@ void mousePressed() {
               exploreTable.addColumn("Target Icon");
               phase = ExperimentPhase.EXPLORATION;
             } else {
+              //// Conditinue to the next condition in the main experiment
               trialCounter = 0;
               currentPage = 0;
               numErrors = 0;
@@ -561,6 +590,7 @@ void mousePressed() {
               }
             }
           }
+          //// incremement error count if incorrect icon was selected
         } else if (icon != null && icon.isHovering()) {
           println("incorrect selection");
           numErrors++;
@@ -568,8 +598,7 @@ void mousePressed() {
       }
       return;
     case FINISHED:
-
-
+      //// Save base data and end the experiment
       println("COMPLETED");
       saveTable(baseRecords, "experiment_results.csv");
       println("Data saved to experiment_results.csv");

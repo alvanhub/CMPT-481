@@ -1,0 +1,14 @@
+Working elements of the assignment (Note, all the elements are working):
+- Part 1:
+    - Display of pokemon in a grid
+    - Switchable pages of pokemon
+    - Tracking for statistics
+    - Display of target pokemon to find
+- Part 2: 
+    - Expirment mode working 
+    - Different game states implemented
+    - Array of different conditions create succesfully
+    - Different ordering of icons for each condition implemented
+- Part 3:
+    - Exploration mode implemented succesfully
+    - Different page sizes and set sizes list in assigment have been implemented
