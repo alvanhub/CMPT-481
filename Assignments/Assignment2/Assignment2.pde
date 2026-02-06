@@ -6,6 +6,7 @@ int IDs[] = {1, 2, 3, 4, 5, 6};
 float cursorX, cursorY;
 Robot robot;
 PShape cursorIcon;
+int cursorSize = 15;
 
 
 //// Target info
@@ -90,6 +91,8 @@ void setup() {
     println("Robot could not be initialized: " + e.getMessage());
   }
 
+  currentTarget = calculateTarget(cursorX, cursorY, IDs[0], "REGULAR");
+
   noCursor();
 }
 
@@ -105,7 +108,7 @@ void draw() {
 
         
         fill(255, 0, 0);
-        ellipse(cursorX, cursorY, 20, 20);
+        ellipse(cursorX, cursorY, cursorSize, cursorSize);
 
         robot.mouseMove(width/2, height/2);
         if (currentTarget != null) {
@@ -133,7 +136,13 @@ void draw() {
 
 void mouseClicked() {
   if (phase == ExperimentPhase.INSTRUCTIONS) {
-      nextTrial();
+        float distance = dist(cursorX, cursorY, currentTarget.x, currentTarget.y);
+        if (distance <= currentTarget.w / 2) {
+            println("Target Clicked!");
+            nextTrial();
+        } else {
+            println("Missed! Try Again.");
+        }
     //   phase = ExperimentPhase.BEFORE_CONDITION;
   }
 }
